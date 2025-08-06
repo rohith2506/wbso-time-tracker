@@ -1,8 +1,0 @@
-{
-  "name": "wbso-time-tracker",
-  "version": "1.0.0",
-  "description": "WBSO Time Tracking Application",
-  "scripts": {
-    "build": "cd frontend && npm install && npm run build"
-  }
-}
