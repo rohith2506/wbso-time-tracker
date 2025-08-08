@@ -29,11 +29,6 @@ export const AuthProvider = ({ children }) => {
     return user;
   };
 
-  const register = async (userData) => {
-    const user = await authAPI.register(userData);
-    return user;
-  };
-
   const logout = () => {
     authAPI.logout();
     localStorage.removeItem('user_data');
@@ -41,7 +36,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
