@@ -10,6 +10,17 @@ def get_time_entries(db: Session, user_id: int) -> List[TimeEntry]:
 def get_time_entry(db: Session, entry_id: int, user_id: int) -> Optional[TimeEntry]:
     return db.query(TimeEntry).filter(TimeEntry.id == entry_id, TimeEntry.user_id == user_id).first()
 
+def get_entry_by_date(db: Session, user_id: int, date: datetime) -> Optional[TimeEntry]:
+    """Check if an entry already exists for the given date"""
+    # Extract just the date part (ignore time)
+    target_date = date.date()
+    
+    entries = db.query(TimeEntry).filter(TimeEntry.user_id == user_id).all()
+    for entry in entries:
+        if entry.date.date() == target_date:
+            return entry
+    return None
+
 def create_time_entry(db: Session, entry: TimeEntryCreate, user_id: int) -> TimeEntry:
     db_entry = TimeEntry(**entry.dict(), user_id=user_id)
     db.add(db_entry)
@@ -32,6 +43,20 @@ def update_time_entry(db: Session, entry_id: int, entry: TimeEntryUpdate, user_i
     db.commit()
     db.refresh(db_entry)
     return db_entry
+
+def delete_time_entry(db: Session, entry_id: int, user_id: int) -> bool:
+    """Delete a time entry if it exists and belongs to the user"""
+    db_entry = get_time_entry(db, entry_id, user_id)
+    if not db_entry:
+        return False
+    
+    # Check if entry can be deleted (within 48 hours)
+    if not can_edit_entry(db_entry):
+        return False
+    
+    db.delete(db_entry)
+    db.commit()
+    return True
 
 def can_edit_entry(entry: TimeEntry) -> bool:
     """Check if entry can be edited (within 48 hours of creation)"""

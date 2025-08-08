@@ -16,6 +16,11 @@ export const timeEntriesAPI = {
     return response.data;
   },
 
+  deleteEntry: async (entryId) => {
+    const response = await apiClient.delete(`/time-entries/${entryId}`);
+    return response.data;
+  },
+
   getStats: async () => {
     const response = await apiClient.get('/time-entries/stats');
     return response.data;
