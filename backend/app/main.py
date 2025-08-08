@@ -10,7 +10,9 @@ import os
 app = FastAPI(
     title="WBSO Time Tracker API",
     description="API for tracking R&D time for WBSO compliance",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url = None,
+    redoc_url=None
 )
 
 # Set up CORS
