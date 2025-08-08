@@ -9,7 +9,6 @@ from app.core.config import settings
 
 router = APIRouter()
 
-'''
 @router.post("/register", response_model=User)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # Check if user already exists
@@ -22,7 +21,6 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     
     user = create_user(db, user_data)
     return user
-'''
 
 @router.post("/login")
 def login(user_data: UserLogin, db: Session = Depends(get_db)):
