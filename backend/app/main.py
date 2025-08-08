@@ -48,6 +48,92 @@ async def startup_event():
 async def root():
     return {"message": "WBSO Time Tracker API"}
 
+@app.get("/debug-users")
+async def debug_users():
+    """Temporary debug endpoint to see what users exist"""
+    try:
+        from app.db.session import get_db
+        from app.models.user import User
+        
+        db = next(get_db())
+        users = db.query(User).all()
+        
+        return {
+            "total_users": len(users),
+            "users": [{"id": user.id, "email": user.email, "project_name": user.project_name} for user in users]
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/create-admin-user")
+async def create_admin_user():
+    """Temporary endpoint to create your admin user"""
+    try:
+        from app.db.session import get_db
+        from app.crud.user import create_user, get_user_by_email
+        from app.schemas.user import UserCreate
+        from datetime import datetime
+        
+        db = next(get_db())
+        
+        # Check if user already exists
+        existing_user = get_user_by_email(db, "your@email.com")  # Change this to your email
+        if existing_user:
+            return {"message": "User already exists", "email": existing_user.email}
+        
+        # Create your admin user
+        admin_user_data = UserCreate(
+            email="your@email.com",  # Change this to your email
+            password="your-password",  # Change this to your desired password
+            project_name="Your Project Name",  # Change this
+            wbso_application_number="WBSO-2024-001",  # Change this
+            project_start_date=datetime(2024, 1, 1),
+            project_end_date=datetime(2024, 12, 31),
+            approved_hours=1500.0
+        )
+        
+        user = create_user(db, admin_user_data)
+        
+        return {
+            "message": "Admin user created successfully",
+            "email": user.email,
+            "project": user.project_name
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/reset-password")
+async def reset_password():
+    """Temporary endpoint to reset your password"""
+    try:
+        from app.db.session import get_db
+        from app.crud.user import get_user_by_email
+        from app.core.security import get_password_hash
+        
+        db = next(get_db())
+        
+        # Update these with your details
+        email = "your@email.com"  # Change this to your actual email
+        new_password = "newpassword123"  # Change this to your new password
+        
+        user = get_user_by_email(db, email)
+        if not user:
+            return {"error": f"User with email {email} not found"}
+        
+        # Hash the new password and update it
+        user.hashed_password = get_password_hash(new_password)
+        db.commit()
+        
+        return {
+            "message": "Password reset successfully",
+            "email": user.email,
+            "new_password": new_password  # Remove this line after testing!
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/test")
 async def test():
     return {"status": "working", "config_loaded": settings.PROJECT_NAME}
