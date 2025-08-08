@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.time_entry import TimeEntry
 from app.schemas.time_entry import TimeEntryCreate, TimeEntryUpdate
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 def get_time_entries(db: Session, user_id: int) -> List[TimeEntry]:
     return db.query(TimeEntry).filter(TimeEntry.user_id == user_id).order_by(TimeEntry.date.desc()).all()
@@ -35,8 +35,23 @@ def update_time_entry(db: Session, entry_id: int, entry: TimeEntryUpdate, user_i
 
 def can_edit_entry(entry: TimeEntry) -> bool:
     """Check if entry can be edited (within 48 hours of creation)"""
-    time_limit = entry.created_at + timedelta(hours=48)
-    return datetime.utcnow() < time_limit
+    try:
+        # Get current time with timezone
+        now = datetime.now(timezone.utc)
+        
+        # Ensure entry.created_at has timezone info
+        if entry.created_at.tzinfo is None:
+            # If no timezone, assume UTC
+            entry_time = entry.created_at.replace(tzinfo=timezone.utc)
+        else:
+            entry_time = entry.created_at
+        
+        time_limit = entry_time + timedelta(hours=48)
+        return now < time_limit
+    except Exception as e:
+        print(f"Error in can_edit_entry: {e}")
+        # If there's any error, default to not editable for safety
+        return False
 
 def get_total_hours(db: Session, user_id: int) -> float:
     """Get total hours logged by user"""
