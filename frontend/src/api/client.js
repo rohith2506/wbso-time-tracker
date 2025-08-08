@@ -9,6 +9,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 // Add token to requests
@@ -20,13 +21,21 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle token expiration
+// Handle token expiration and errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Clear all auth data
       localStorage.removeItem('access_token');
+      localStorage.removeItem('user_data');
       window.location.href = '/';
+    } else if (error.response?.status === 429) {
+      // Rate limit exceeded
+      alert('Too many requests. Please try again later.');
+    } else if (error.code === 'ECONNABORTED') {
+      // Timeout
+      alert('Request timeout. Please check your connection.');
     }
     return Promise.reject(error);
   }
