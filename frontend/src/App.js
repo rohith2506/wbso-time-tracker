@@ -5,20 +5,14 @@ import { timeEntriesAPI } from './api/timeEntries';
 import './App.css';
 
 const LoginForm = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    project_name: '',
-    wbso_application_number: '',
-    project_start_date: '',
-    project_end_date: '',
-    approved_hours: ''
+    password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { login, register } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,22 +20,9 @@ const LoginForm = () => {
     setError('');
 
     try {
-      if (isLogin) {
-        await login(formData.email, formData.password);
-      } else {
-        // Convert dates and approved_hours for registration
-        const registerData = {
-          ...formData,
-          project_start_date: new Date(formData.project_start_date).toISOString(),
-          project_end_date: new Date(formData.project_end_date).toISOString(),
-          approved_hours: parseFloat(formData.approved_hours)
-        };
-        await register(registerData);
-        setIsLogin(true);
-        setError('Registration successful! Please log in.');
-      }
+      await login(formData.email, formData.password);
     } catch (error) {
-      setError(error.response?.data?.detail || 'An error occurred');
+      setError(error.response?.data?.detail || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -65,71 +46,9 @@ const LoginForm = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <h2 className="text-xl font-semibold mb-6 text-center">
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </h2>
+          <h2 className="text-xl font-semibold mb-6 text-center">Sign In</h2>
           
           <div className="space-y-4">
-            {!isLogin && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.project_name}
-                    onChange={(e) => setFormData({...formData, project_name: e.target.value})}
-                    placeholder="Your WBSO project name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">WBSO Application Number</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.wbso_application_number}
-                    onChange={(e) => setFormData({...formData, wbso_application_number: e.target.value})}
-                    placeholder="WBSO-YYYY-XXXXXX"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                    <input
-                      type="date"
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={formData.project_start_date}
-                      onChange={(e) => setFormData({...formData, project_start_date: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                    <input
-                      type="date"
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={formData.project_end_date}
-                      onChange={(e) => setFormData({...formData, project_end_date: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Approved Hours</label>
-                  <input
-                    type="number"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.approved_hours}
-                    onChange={(e) => setFormData({...formData, approved_hours: e.target.value})}
-                    placeholder="1500"
-                  />
-                </div>
-              </>
-            )}
-            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
@@ -159,23 +78,9 @@ const LoginForm = () => {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
             >
-              {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </div>
-          
-          <p className="text-center mt-4 text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
-              className="text-blue-600 hover:underline font-medium"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
         </form>
       </div>
     </div>
@@ -445,13 +350,27 @@ const TimeHistory = () => {
       fetchEntries(); // Refresh the list
     } catch (error) {
       console.error('Failed to update entry:', error);
-      alert('Failed to update entry. It may be locked (48-hour limit exceeded).');
+      alert('Failed to update entry: ' + (error.response?.data?.detail || error.message));
     }
   };
 
   const cancelEdit = () => {
     setEditingEntry(null);
     setEditFormData({});
+  };
+
+  const deleteEntry = async (entryId) => {
+    if (!window.confirm('Are you sure you want to delete this time entry? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await timeEntriesAPI.deleteEntry(entryId);
+      fetchEntries(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+      alert('Failed to delete entry: ' + (error.response?.data?.detail || error.message));
+    }
   };
 
   const exportCSV = () => {
@@ -657,14 +576,24 @@ const TimeHistory = () => {
                         )}
                       </td>
                       <td className="py-3 px-2">
-                        {entry.can_edit && (
-                          <button
-                            onClick={() => startEditing(entry)}
-                            className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
-                          >
-                            Edit
-                          </button>
-                        )}
+                        <div className="flex gap-1">
+                          {entry.can_edit && (
+                            <>
+                              <button
+                                onClick={() => startEditing(entry)}
+                                className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteEntry(entry.id)}
+                                className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </>
                   )}
