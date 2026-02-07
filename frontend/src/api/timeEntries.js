@@ -1,8 +1,9 @@
 import apiClient from './client';
 
 export const timeEntriesAPI = {
-  getEntries: async () => {
-    const response = await apiClient.get('/time-entries/');
+  getEntries: async (year) => {
+    const params = year ? { year } : {};
+    const response = await apiClient.get('/time-entries/', { params });
     return response.data;
   },
 
@@ -21,8 +22,9 @@ export const timeEntriesAPI = {
     return response.data;
   },
 
-  getStats: async () => {
-    const response = await apiClient.get('/time-entries/stats');
+  getStats: async (year) => {
+    const params = year ? { year } : {};
+    const response = await apiClient.get('/time-entries/stats', { params });
     return response.data;
   }
 };

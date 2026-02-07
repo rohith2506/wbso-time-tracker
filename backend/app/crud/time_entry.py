@@ -1,11 +1,17 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import extract
 from app.models.time_entry import TimeEntry
 from app.schemas.time_entry import TimeEntryCreate, TimeEntryUpdate
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 
-def get_time_entries(db: Session, user_id: int) -> List[TimeEntry]:
-    return db.query(TimeEntry).filter(TimeEntry.user_id == user_id).order_by(TimeEntry.date.desc()).all()
+def get_time_entries(db: Session, user_id: int, year: Optional[int] = None) -> List[TimeEntry]:
+    if year is None:
+        year = datetime.now().year
+    return db.query(TimeEntry).filter(
+        TimeEntry.user_id == user_id,
+        extract('year', TimeEntry.date) == year
+    ).order_by(TimeEntry.date.desc()).all()
 
 def get_time_entry(db: Session, entry_id: int, user_id: int) -> Optional[TimeEntry]:
     return db.query(TimeEntry).filter(TimeEntry.id == entry_id, TimeEntry.user_id == user_id).first()
@@ -78,7 +84,12 @@ def can_edit_entry(entry: TimeEntry) -> bool:
         # If there's any error, default to not editable for safety
         return False
 
-def get_total_hours(db: Session, user_id: int) -> float:
-    """Get total hours logged by user"""
-    result = db.query(TimeEntry).filter(TimeEntry.user_id == user_id).all()
+def get_total_hours(db: Session, user_id: int, year: Optional[int] = None) -> float:
+    """Get total hours logged by user for a given year (defaults to current year)"""
+    if year is None:
+        year = datetime.now().year
+    result = db.query(TimeEntry).filter(
+        TimeEntry.user_id == user_id,
+        extract('year', TimeEntry.date) == year
+    ).all()
     return sum(entry.hours for entry in result)

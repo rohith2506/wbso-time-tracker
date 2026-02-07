@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.api.deps import get_current_user
@@ -20,11 +20,12 @@ router = APIRouter()
 
 @router.get("/", response_model=List[TimeEntry])
 def read_time_entries(
+    year: Optional[int] = Query(None, description="Filter by year (defaults to current year)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
-        entries = get_time_entries(db, user_id=current_user.id)
+        entries = get_time_entries(db, user_id=current_user.id, year=year)
         # Add can_edit flag to each entry
         for entry in entries:
             entry.can_edit = can_edit_entry(entry)
@@ -137,11 +138,12 @@ def delete_time_entry_endpoint(
 
 @router.get("/stats")
 def get_time_stats(
+    year: Optional[int] = Query(None, description="Filter by year (defaults to current year)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
-        total_hours = get_total_hours(db, user_id=current_user.id)
+        total_hours = get_total_hours(db, user_id=current_user.id, year=year)
         remaining_hours = current_user.approved_hours - total_hours
         progress_percentage = (total_hours / current_user.approved_hours) * 100 if current_user.approved_hours > 0 else 0
         

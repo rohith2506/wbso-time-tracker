@@ -87,17 +87,39 @@ const LoginForm = () => {
   );
 };
 
+const YearSelector = ({ selectedYear, onChange }) => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    years.push(y);
+  }
+
+  return (
+    <select
+      value={selectedYear}
+      onChange={(e) => onChange(parseInt(e.target.value))}
+      className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      {years.map((y) => (
+        <option key={y} value={y}>{y}</option>
+      ))}
+    </select>
+  );
+};
+
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [statsData, entriesData] = await Promise.all([
-          timeEntriesAPI.getStats(),
-          timeEntriesAPI.getEntries()
+          timeEntriesAPI.getStats(selectedYear),
+          timeEntriesAPI.getEntries(selectedYear)
         ]);
         setStats(statsData);
         setEntries(entriesData.slice(0, 3)); // Recent 3 entries
@@ -109,7 +131,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, [selectedYear]);
 
   if (loading) {
     return <div className="p-6">Loading dashboard...</div>;
@@ -118,7 +140,10 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Project Overview</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Project Overview</h2>
+          <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+        </div>
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -310,14 +335,16 @@ const TimeHistory = () => {
   const [loading, setLoading] = useState(true);
   const [editingEntry, setEditingEntry] = useState(null);
   const [editFormData, setEditFormData] = useState({});
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     fetchEntries();
-  }, []);
+  }, [selectedYear]);
 
   const fetchEntries = async () => {
+    setLoading(true);
     try {
-      const data = await timeEntriesAPI.getEntries();
+      const data = await timeEntriesAPI.getEntries(selectedYear);
       setEntries(data);
     } catch (error) {
       console.error('Failed to fetch entries:', error);
@@ -454,7 +481,10 @@ const TimeHistory = () => {
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Time History</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-900">Time History</h2>
+          <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+        </div>
         <div className="flex gap-2">
           <button 
             onClick={exportCSV}
